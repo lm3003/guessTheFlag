@@ -9,49 +9,85 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item]
+    
+    @State private var flags = ["Estonia", "France", "Germany", "Ireland", "Italy", "Monaco", "Nigeria", "Poland", "Spain", "UK", "US", "Ukraine"].shuffled()
+    @State private var correctAns = Int.random(in: 0...2)
+    
+    @State private var answerValue = ""
+    @State private var showAlert = false
+    @State private var score = 0
+    
+    
 
     var body: some View {
-        NavigationSplitView {
-            List {
-                ForEach(items) { item in
-                    NavigationLink {
-                        Text("Item at \(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))")
-                    } label: {
-                        Text(item.timestamp, format: Date.FormatStyle(date: .numeric, time: .standard))
+        ZStack {
+            Spacer()
+            RadialGradient(stops: [
+                .init(color: .blue, location: 0.3),
+                .init(color: .red, location: 0.3)
+            ], center: .top, startRadius: 200, endRadius: 700)
+            .ignoresSafeArea()
+            VStack {
+                Text("Guess the flag")
+                    .font(.largeTitle.bold())
+                    .foregroundStyle(.white)
+                VStack(spacing: 15) {
+                    VStack {
+                        Text("Tap the flag of the country")
+                            .foregroundStyle(.black)
+                            .font(.subheadline.weight(.heavy))
+                        Text(flags[correctAns])
+                            .foregroundStyle(.black)
+                            .font(.largeTitle.weight(.semibold))
+                    }
+                    
+                    ForEach(0..<3) { number in
+                        Button {
+                            showResult(number)
+                        } label: {
+                            Image(flags[number])
+                                .clipShape(.capsule)
+                                .shadow(radius: 5)
+                        }
                     }
                 }
-                .onDelete(perform: deleteItems)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 20)
+                .background(.regularMaterial)
+                .clipShape(.rect(cornerRadius: 20))
+                
+                Spacer()
+                Spacer()
+                
+                Text("Score: \(score)")
+                    .foregroundStyle(.white)
+                    .font(.title.bold())
+                Spacer()
+                Spacer()
             }
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    EditButton()
-                }
-                ToolbarItem {
-                    Button(action: addItem) {
-                        Label("Add Item", systemImage: "plus")
-                    }
-                }
+            .padding()
+            .alert(answerValue, isPresented: $showAlert) {
+                Button ("Continue", action: askNextQuestion)
+            } message: {
+                Text("Your score is \(score)")
             }
-        } detail: {
-            Text("Select an item")
         }
     }
-
-    private func addItem() {
-        withAnimation {
-            let newItem = Item(timestamp: Date())
-            modelContext.insert(newItem)
+    
+    
+    func showResult(_ number:Int) {
+        if number == correctAns {
+            answerValue = "Correct"
+            score += 1
+        } else {
+            answerValue = "Wrong"
         }
+        showAlert = true
     }
-
-    private func deleteItems(offsets: IndexSet) {
-        withAnimation {
-            for index in offsets {
-                modelContext.delete(items[index])
-            }
-        }
+    
+    func askNextQuestion() {
+        flags.shuffle()
+        correctAns = Int.random(in: 0..<3)
     }
 }
 
